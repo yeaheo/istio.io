@@ -19,7 +19,7 @@ Quick Start instructions to install and configure Istio networking in a Docker C
     run the following command to download and extract the latest release automatically:
 
     {{< text bash >}}
-    $ curl -L https://git.io/getLatestIstio | sh -
+    $ curl -L https://git.io/getLatestIstio | ISTIO_VERSION={{< istio_full_version >}} sh -
     {{< /text >}}
 
 1.  Extract the installation file and change the directory to the file location. The
@@ -80,7 +80,7 @@ For example, run the following command on a macOS or Linux system:
 ## Deploy your application
 
 You can now deploy your own application or one of the sample applications provided with the
-installation like [Bookinfo](/docs/examples/bookinfo/).
+installation like[Bookinfo](/docs/examples/bookinfo/#if-you-are-running-on-docker-with-consul).
 
 {{< tip >}}
 Since there is no concept of pods in a Docker setup, the Istio

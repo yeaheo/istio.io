@@ -9,7 +9,7 @@ aliases:
     - /about/contribute/creating-a-pull-request
     - /about/contribute/editing
     - /about/contribute/staging-your-changes
-keywords: [contribute, community, GitHub, PR]
+keywords: [contribute,community,github,pr]
 ---
 
 We're excited that you're interested in contributing to improve and expand
@@ -52,7 +52,7 @@ To add content you must create a fork of the repository and a PR from
 your fork to the docs main repository. The following steps describe the
 process:
 
-<a class="btn btn-istio"
+<a class="btn"
 href="https://github.com/istio/istio.io/">Browse this site's source
 code</a>
 

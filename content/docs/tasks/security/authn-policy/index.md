@@ -15,9 +15,9 @@ the underlying concepts in the [authentication overview](/docs/concepts/security
 * Understand Istio [authentication policy](/docs/concepts/security/#authentication-policies) and related
 [mutual TLS authentication](/docs/concepts/security/#mutual-tls-authentication) concepts.
 
-* Have a Kubernetes cluster with Istio installed, without global mutual TLS enabled (e.g use `install/kubernetes/istio.yaml` as described in
-[installation steps](/docs/setup/kubernetes/quick-start/#installation-steps), or set `global.mtls.enabled` to false using
-[Helm](/docs/setup/kubernetes/helm-install/)).
+* Have a Kubernetes cluster with Istio installed, without global mutual TLS enabled (e.g use `install/kubernetes/istio-demo.yaml` as described in
+[installation steps](/docs/setup/kubernetes/install/kubernetes/#installation-steps), or set `global.mtls.enabled` to false using
+[Helm](/docs/setup/kubernetes/install/helm/)).
 
 ### Setup
 
@@ -62,7 +62,7 @@ sleep.legacy to httpbin.bar: 200
 sleep.legacy to httpbin.legacy: 200
 {{< /text >}}
 
-You should also verify that there are no existing authentication policies in the system, which you can do as follows:
+You should also verify that there is a default mesh authentication policy in the system, which you can do as follows:
 
 {{< text bash >}}
 $ kubectl get policies.authentication.istio.io --all-namespaces
@@ -71,7 +71,8 @@ No resources found.
 
 {{< text bash >}}
 $ kubectl get meshpolicies.authentication.istio.io
-No resources found.
+NAME      AGE
+default   3m
 {{< /text >}}
 
 Last but not least, verify that there are no destination rules that apply on the example services. You can do this by checking the `host:` value of
@@ -103,6 +104,11 @@ spec:
   - mtls: {}
 EOF
 {{< /text >}}
+
+{{< tip >}}
+The mesh authentication policy uses the [regular authentication policy API](/docs/reference/config/istio.authentication.v1alpha1/)
+ it is defined in the cluster-scoped `MeshPolicy` CRD.
+ {{< /tip >}}
 
 This policy specifies that all workloads in the mesh will only accept encrypted requests using TLS. As you can see, this authentication policy has the kind:
  `MeshPolicy`. The name of the policy must be `default`, and it contains no `targets` specification (as it is intended to apply to all services in the mesh).
@@ -137,11 +143,12 @@ spec:
 EOF
 {{< /text >}}
 
->
+{{< tip >}}
 * Host value `*.local` to limit matches only to services in cluster, as opposed to external services. Also note, there is no restriction on the name or
 namespace for destination rule.
 * With `ISTIO_MUTUAL` TLS mode, Istio will set the path for key and certificates (e.g client certificate, private key and CA certificates) according to
 its internal implementation.
+{{< /tip >}}
 
 Don’t forget that destination rules are also used for non-auth reasons such as setting up canarying, but the same order of precedence applies. So if a service
 requires a specific destination rule for any reason - for example, for a configuration load balancer -  the rule must contain a similar TLS block with
@@ -209,7 +216,7 @@ The Kubernetes API server doesn't have a sidecar, thus request from Istio servic
 requests to any non-Istio service.
 
 {{< text bash >}}
-$ TOKEN=$(kubectl describe secret $(kubectl get secrets | grep default | cut -f1 -d ' ') | grep -E '^token' | cut -f2 -d':' | tr -d '\t')
+$ TOKEN=$(kubectl describe secret $(kubectl get secrets | grep default-token | cut -f1 -d ' ' | head -1) | grep -E '^token' | cut -f2 -d':' | tr -d '\t')
 $ kubectl exec $(kubectl get pod -l app=sleep -n foo -o jsonpath={.items..metadata.name}) -c sleep -n foo -- curl https://kubernetes.default/api --header "Authorization: Bearer $TOKEN" --insecure -s -o /dev/null -w "%{http_code}\n"
 000
 command terminated with exit code 35
@@ -232,14 +239,14 @@ EOF
 {{< /text >}}
 
 {{< tip >}}
-If you install Istio with the [default mutual TLS option](/docs/setup/kubernetes/quick-start/#option-2-install-istio-with-default-mutual-tls-authentication),
-this rule, together with the global authentication policy and destination rule above will be injected to the system during installation process.
+This rule, along with the global authentication policy and destination rule, above,
+is automatically injected into the system when you install Istio with mutual TLS enabled.
 {{< /tip >}}
 
 Re-run the testing command above to confirm that it returns 200 after the rule is added:
 
 {{< text bash >}}
-$ TOKEN=$(kubectl describe secret $(kubectl get secrets | grep default | cut -f1 -d ' ') | grep -E '^token' | cut -f2 -d':' | tr -d '\t')
+$ TOKEN=$(kubectl describe secret $(kubectl get secrets | grep default-token | cut -f1 -d ' ' | head -1) | grep -E '^token' | cut -f2 -d':' | tr -d '\t')
 $ kubectl exec $(kubectl get pod -l app=sleep -n foo -o jsonpath={.items..metadata.name}) -c sleep -n foo -- curl https://kubernetes.default/api --header "Authorization: Bearer $TOKEN" --insecure -s -o /dev/null -w "%{http_code}\n"
 200
 {{< /text >}}
@@ -351,9 +358,10 @@ spec:
 EOF
 {{< /text >}}
 
->
+{{< tip >}}
 * In this example, we do **not** specify namespace in metadata but put it in the command line (`-n bar`), which has an identical effect.
 * There is no restriction on the authentication policy and destination rule name. This example uses the name of the service itself for simplicity.
+{{< /tip >}}
 
 Again, run the probing command. As expected, request from `sleep.legacy` to `httpbin.bar` starts failing with the same reasons.
 
@@ -545,7 +553,7 @@ spec:
 EOF
 {{< /text >}}
 
-The same curl command from before will return with 401 error code, as a result of server is expecting JWT but none was provided:
+The same `curl` command from before will return with 401 error code, as a result of server is expecting JWT but none was provided:
 
 {{< text bash >}}
 $ curl $INGRESS_HOST/headers -s -o /dev/null -w "%{http_code}\n"
@@ -554,18 +562,31 @@ $ curl $INGRESS_HOST/headers -s -o /dev/null -w "%{http_code}\n"
 
 Attaching the valid token generated above returns success:
 
-{{< text bash>}}
+{{< text bash >}}
 $ TOKEN=$(curl {{< github_file >}}/security/tools/jwt/samples/demo.jwt -s)
 $ curl --header "Authorization: Bearer $TOKEN" $INGRESS_HOST/headers -s -o /dev/null -w "%{http_code}\n"
 200
 {{< /text >}}
 
 To observe other aspects of JWT validation, use the script [`gen-jwt.py`]({{< github_tree >}}/security/tools/jwt/samples/gen-jwt.py) to
-generate new tokens to test with different issuer, audiences, expiry date, etc. For example, the command below creates a token that
+generate new tokens to test with different issuer, audiences, expiry date, etc. The script can be downloaded from the Istio repository:
+
+{{< text bash >}}
+$ wget {{< github_file >}}/security/tools/jwt/samples/gen-jwt.py
+$ chmod +x gen-jwt.py
+{{< /text >}}
+
+You also need the `key.pem` file:
+
+{{< text bash >}}
+$ wget {{< github_file >}}/security/tools/jwt/samples/key.pem
+{{< /text >}}
+
+For example, the command below creates a token that
 expires in 5 seconds. As you see, Istio authenticates requests using that token successfully at first but rejects them after 5 seconds:
 
 {{< text bash >}}
-$ TOKEN=$(@security/tools/jwt/samples/gen-jwt.py@ @security/tools/jwt/samples/key.pem@ --expire 5)
+$ TOKEN=$(./gen-jwt.py ./key.pem --expire 5)
 $ for i in `seq 1 10`; do curl --header "Authorization: Bearer $TOKEN" $INGRESS_HOST/headers -s -o /dev/null -w "%{http_code}\n"; sleep 1; done
 200
 200
@@ -588,6 +609,11 @@ End-user authentication can be enabled or disabled based on request path. This i
 disable authentication for some paths, for example, the path used for health check or status report.
 You can also specify different JWT requirements on different paths.
 
+{{< warning >}}
+The end-user authentication with per-path requirements is an experimental feature in Istio 1.1 and
+is **NOT** recommended for production use.
+{{< /warning >}}
+
 #### Disable End-user authentication for specific paths
 
 Modify the `jwt-example` policy to disable End-user authentication for path `/user-agent`:
@@ -604,7 +630,7 @@ spec:
   origins:
   - jwt:
       issuer: "testing@secure.istio.io"
-      jwksUri: "https://raw.githubusercontent.com/istio/istio/master/security/tools/jwt/samples/jwks.json"
+      jwksUri: "{{< github_file >}}/security/tools/jwt/samples/jwks.json"
       trigger_rules:
       - excluded_paths:
         - exact: /user-agent

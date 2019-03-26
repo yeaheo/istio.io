@@ -2,7 +2,7 @@
 title: Denials and White/Black Listing
 description: Shows how to control access to a service using simple denials or white/black listing.
 weight: 20
-keywords: [policies, denial, whitelist, blacklist]
+keywords: [policies,denial,whitelist,blacklist]
 aliases:
     - /docs/tasks/basic-access-control.html
     - /docs/tasks/security/basic-access-control/index.html
@@ -15,6 +15,11 @@ This task shows how to control access to a service using simple denials, attribu
 
 * Set up Istio on Kubernetes by following the instructions in the
   [Installation guide](/docs/setup/kubernetes/).
+
+    {{< warning >}}
+    Policy enforcement **must** be enabled in your cluster for this task. Follow the steps in
+    [Enabling Policy Enforcement](/docs/tasks/policy-enforcement/enabling-policy/) to ensure that policy enforcement is enabled.
+    {{< /warning >}}
 
 * Deploy the [Bookinfo](/docs/examples/bookinfo/) sample application.
 

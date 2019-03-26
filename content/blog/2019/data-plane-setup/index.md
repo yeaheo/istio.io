@@ -1,23 +1,24 @@
 ---
-title: Demystifying Istio's Sidecar Injection Model 
+title: Demystifying Istio's Sidecar Injection Model
 description: De-mystify how Istio manages to plugin its data-plane components into an existing deployment.
 publishdate: 2019-01-31
 subtitle:
 attribution: Manish Chugtu
-twitter: chugtum 
-weight: 76
-keywords: [kubernetes, istio, sidecar injection, admission controller, mutating webhook, control plane, traffic management]
+twitter: chugtum
+keywords: [kubernetes,sidecar-injection, traffic-management]
 
 ---
 A simple overview of an Istio service-mesh architecture always starts with describing the control-plane and data-plane.
 
-[From Istio’s documentation:](../../../docs/concepts/what-is-istio/#architecture)
+[From Istio’s documentation:](/docs/concepts/what-is-istio/#architecture)
 
-> An Istio service mesh is logically split into a data plane and a control plane.
->
->  The data plane is composed of a set of intelligent proxies (Envoy) deployed as sidecars. These proxies mediate and control all network communication between microservices along with Mixer, a general-purpose policy and telemetry hub.
->
->  The control plane manages and configures the proxies to route traffic. Additionally, the control plane configures Mixers to enforce policies and collect telemetry.
+{{< quote >}}
+An Istio service mesh is logically split into a data plane and a control plane.
+
+The data plane is composed of a set of intelligent proxies (Envoy) deployed as sidecars. These proxies mediate and control all network communication between microservices along with Mixer, a general-purpose policy and telemetry hub.
+
+The control plane manages and configures the proxies to route traffic. Additionally, the control plane configures Mixers to enforce policies and collect telemetry.
+{{< /quote >}}
 
 {{< image width="40%"
     ratio="33%"
@@ -207,7 +208,9 @@ But how does this work? To get to the bottom of this, we need to understand Kube
 
 [From Kubernetes documentation:](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/)
 
-> An admission controller is a piece of code that intercepts requests to the Kubernetes API server prior to persistence of the object, but after the request is authenticated and authorized. You can define two types of admission webhooks, validating admission Webhook and mutating admission webhook. With validating admission Webhooks, you may reject requests to enforce custom admission policies. With mutating admission Webhooks, you may change requests to enforce custom defaults.
+{{< tip >}}
+An admission controller is a piece of code that intercepts requests to the Kubernetes API server prior to persistence of the object, but after the request is authenticated and authorized. You can define two types of admission webhooks, validating admission Webhook and mutating admission webhook. With validating admission Webhooks, you may reject requests to enforce custom admission policies. With mutating admission Webhooks, you may change requests to enforce custom defaults.
+{{< /tip >}}
 
 For automatic sidecar injection, Istio relies on `Mutating Admission Webhook`. Let’s look at the details of the  `istio-sidecar-injector` mutating webhook configuration.
 
@@ -253,7 +256,7 @@ webhooks:
 
 This is where you can see the webhook `namespaceSelector` label that is matched for sidecar injection with the label `istio-injection: enabled`. In this case, you also see the operations and resources for which this is done when the pods are created. When an `apiserver` receives a request that matches one of the rules, the `apiserver` sends an admission review request to the webhook service as specified in the `clientConfig:`configuration with the `name: istio-sidecar-injector` key-value pair. We should be able to see that this service is running in the `istio-system` namespace.
 
-{{< text bash>}}
+{{< text bash >}}
 $ kubectl get svc --namespace=istio-system | grep sidecar-injector
 istio-sidecar-injector   ClusterIP   10.102.70.184   <none>        443/TCP             24d
 {{< /text >}}
@@ -343,4 +346,6 @@ The output above clearly shows that all the incoming traffic to port 80, which i
 
 This brings us to the end of this post. I hope it helped to de-mystify how Istio manages to inject the sidecar proxies into an existing deployment and how Istio routes the traffic to the proxy.
 
-> Update: In place of `istio-init`, there now seems to be an option of using the new CNI, which removes the need for the init container and associated privileges. This [`istio-cni`] (<https://github.com/istio/cni>) plugin sets up the pods' networking to fulfill this requirement in place of the current Istio injected pod `istio-init` approach.
+{{< idea >}}
+Update: In place of `istio-init`, there now seems to be an option of using the new CNI, which removes the need for the init container and associated privileges. This [`istio-cni`](https://github.com/istio/cni) plugin sets up the pods' networking to fulfill this requirement in place of the current Istio injected pod `istio-init` approach.
+{{< /idea >}}

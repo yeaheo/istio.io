@@ -3,12 +3,11 @@ title: Deploy a Custom Ingress Gateway Using Cert-Manager
 description: Describes how to deploy a custom ingress gateway using cert-manager manually.
 subtitle: Custom ingress gateway
 publishdate: 2019-01-10
-weight: 89
 keywords: [ingress,traffic-management]
 attribution: Julien Senon
 ---
 
-This post provides instructions to manually create a custom ingress [gateway](/docs/reference/config/istio.networking.v1alpha3/#Gateway) with automatic provisioning of certificates based on cert-manager.
+This post provides instructions to manually create a custom ingress [gateway](/docs/reference/config/networking/v1alpha3/gateway/) with automatic provisioning of certificates based on cert-manager.
 
 The creation of custom ingress gateway could be used in order to have different `loadbalancer` in order to isolate traffic.
 
@@ -69,7 +68,7 @@ The creation of custom ingress gateway could be used in order to have different 
                 key: secret-access-key
     {{< /text >}}
 
-1. If you use the `route53` [provider](https://cert-manager.readthedocs.io/en/latest/reference/issuers/acme/dns01.html#amazon-route53), you must provide a secret to perform DNS ACME Validation. To create the secret, apply the following configuration file:
+1. If you use the `route53` [provider](https://cert-manager.readthedocs.io/en/latest/tasks/acme/configuring-dns01/route53.html), you must provide a secret to perform DNS ACME Validation. To create the secret, apply the following configuration file:
 
     {{< text yaml >}}
     apiVersion: v1
@@ -231,4 +230,4 @@ The creation of custom ingress gateway could be used in order to have different 
       SSL certificate verify ok.
     {{< /text >}}
 
-**Congratulations!** You can now use your custom `istio-custom-gateway` [gateway](/docs/reference/config/istio.networking.v1alpha3/#Gateway) configuration object.
+**Congratulations!** You can now use your custom `istio-custom-gateway` [gateway](/docs/reference/config/networking/v1alpha3/gateway/) configuration object.

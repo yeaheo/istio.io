@@ -1,8 +1,9 @@
-<div class="callout warning">
+<aside class="callout warning">
     <div class="type">
-        <svg class="large_icon"><use xlink:href="/img/icons.svg#exclamation-mark"/></svg>
+        {{ partial "large_icon.html" "callout-warning" }}
     </div>
     <div class="content">
-        {{ markdownify .Inner }}
+        {{- $text := partial "strip_indent.html" (dict "content" .Inner "pos" .Position) -}}
+        {{- $text | markdownify -}}
     </div>
-</div>
+</aside>
